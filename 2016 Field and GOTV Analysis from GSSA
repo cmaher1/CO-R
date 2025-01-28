@@ -1,0 +1,878 @@
+#analyze field and gotv programs
+##leg field
+##statewide field
+##latino field, phones
+##new era phones
+
+setwd("C:/Users/twf/IRN Dropbox/GSSA/Archive/2016 Field/2016 Field & GOTV Analyses")
+
+
+#LEGISLATIVE FIELD
+
+#get # of unique individuals attempted in week 1
+lfw1 <- read.table("LFP Week 1 Contact History.txt", sep="\t", header=TRUE, quote="", fill=TRUE)
+names(lfw1)
+lfw1$dup <- duplicated(lfw1$VANID)
+table(lfw1$dup) #1st week of leg field program attempted to canvass 3536 individuals
+table(lfw1$dup,lfw1$ResultShortName) #of these, 592 were canvassed (all just once)
+
+#get # of unique individuals/targets attempted and canvassed after week 1
+lf <- read.table("2016-11-17 LFP Data.txt", sep="\t", header=TRUE, quote="", fill=TRUE)
+names(lf)
+lf$dup <- duplicated(lf$vanid)
+table(lf$dup)
+table(lf$dup,lf$target)
+prop.table(table(lf$dup,lf$target),1)
+lf$duphhid <- duplicated(lf$hhid)
+table(lf$duphhid) #leg field program attempted to canvass a total of 568,569 individuals (190,609 or 34% were targets) in 164,585 households (note: 41 attempts unassigned to hh)
+
+
+canvassed <- lf[ which(lf$canvass_result=="Canvassed"), ]
+canvassed$dup <- duplicated(canvassed$vanid)
+table(canvassed$dup) #the leg field program canvassed 79,105 unique individuals + 592 = 79,697
+table(canvassed$dup,canvassed$target)
+prop.table(table(canvassed$dup,canvassed$target),1) #of these 79,105, 48,736 (62%) were targets
+
+#get # of knocks after week 1
+lf$knockid <- paste0(lf$datetime_canvassed,lf$hhid)
+lf$knockiddup <- duplicated(lf$knockid)
+table(lf$knockiddup) #379,731 knocks (based on attempt date/time & hhid)
+table(lf$knockiddup,lf$pass)
+prop.table(table(lf$knockiddup,lf$pass),1)
+## individuals canvassed/total knocks = 20.8% canvass rate
+## targets canvassed/total knocks = 12.8% target canvass rate
+
+#get pass dates
+lf$month <- substr(lf$datetime_canvassed,6,7)
+lf$day <- substr(lf$datetime_canvassed,9,10)
+table(lf$day,lf$month)
+lfp1 <- lf[ which(lf$pass=="Pass 1"), ]
+table(lfp1$day,lfp1$month)
+
+
+
+
+
+
+
+#STATEWIDE FIELD
+
+#get # of unique individuals attempted and canvassed (without VANID)
+sfnoid <- read.csv("State Field without VAN ID.csv") #523,723 individuals, may include duplicates
+names(sfnoid)
+
+sfnoid$dup <- duplicated(sfnoid$attempt_id)
+table(sfnoid$dup) #496,376 unique attempts/knocks
+table(sfnoid$dup,sfnoid$canvass_status) #39,962 individuals canvassed, may include duplicates
+sfnoid$knockid <- paste0(sfnoid$event_time,sfnoid$canv_id)
+sfnoid$knockiddup <- duplicated(sfnoid$knockid)
+table(sfnoid$knockiddup) #442,653 unique knocks...may be an underestimate if canvasser logged multiple attempts with same event_time
+## individuals canvassed/unique attempts or knocks = 8% canvass rate
+
+#get # of unique individuals/targets attempted and canvassed (with VANID)
+sf <- read.csv("State Field with VAN ID.csv")
+names(sf)
+sf$dup <- duplicated(sf$vanid)
+table(sf$dup) #1,063,720 unique individuals attempted by statewide field program
+table(sf$dup,sf$target)
+prop.table(table(sf$dup,sf$target),1) #of these million, 520,697 (49.0%) were targets
+
+sf$unique <- ifelse(sf$dup==FALSE,1,0)
+unique <- sf[ which(sf$unique==1), ]
+dim(unique)
+myvars <- c("vanid")
+unique <- unique[myvars]
+write.table(unique,"Statewide Field VANIDs.txt", sep="\t", row.names=F)
+
+data <- read.table("Statewide Field Individuals Attempted.txt", sep="\t", header=TRUE, quote="", fill=TRUE)
+names(data)
+dim(data) #857,892 people matched in VAN using SOSID as of 1/5/17 (~3k people didn't match likely due to post-election voter file update)
+
+
+
+canvassed <- sf[ which(sf$canvass_status=="Canvassed"), ]
+canvassed$dup <- duplicated(canvassed$vanid)
+table(canvassed$dup) #the statewide field program canvassed 142,094 unique individuals
+table(canvassed$dup,canvassed$target)
+prop.table(table(canvassed$dup,canvassed$target),1) #of these 142,094, 97,748 (69%) were targets
+
+#get # of knocks
+sf$attempt_iddup <- duplicated(sf$attempt_id)
+table(sf$attempt_iddup) #691,959 unique attempts/knocks
+## individuals canvassed/total knocks = 20.5% canvass rate
+## targets canvassed/total knocks = 14.1% target canvass rate
+
+#combine with and without id to get total knocks
+myvars <- c("vanid","attempt_id","pass","event_time","target","canvass_status","id","pledge_card","vote_plan_confirmation","canv_id")
+sfnoidsub <- sfnoid[myvars]
+sfsub <- sf[myvars]
+sftotal <- rbind(sfnoidsub,sfsub)
+
+sftotal$attempt_iddup <- duplicated(sftotal$attempt_id)
+table(sftotal$attempt_iddup) #727,932 unique attempt ids/knocks...so canvassers made 727932-691959 35,973 attempts in which there were no voters w/ vanids?
+
+#get pass dates
+sftotal$month <- substr(sftotal$event_time,6,7)
+sftotal$day <- substr(sftotal$event_time,9,10)
+table(sftotal$day,sftotal$month)
+sfp1 <- sftotal[ which(sftotal$pass=="P1"), ]
+table(sfp1$day,sfp1$month)
+sfg1 <- sftotal[ which(sftotal$pass=="G1"), ]
+table(sfg1$day,sfg1$month)
+
+
+
+
+
+
+#FAIR SHARE LEG
+
+#get # of unique individuals attempted and canvassed (without VANID)
+fsnoid <- read.csv("State Leg without VAN ID.csv") #211,387 individuals, may include duplicates
+names(fsnoid)
+fsnoid$dup <- duplicated(fsnoid$attempt_id)
+table(fsnoid$dup) #203,923 unique attempts/knocks
+table(fsnoid$dup,fsnoid$canvass_status) #6,410 individuals canvassed, may include duplicates
+fsnoid$knockid <- paste0(fsnoid$event_time,fsnoid$canv_id)
+fsnoid$knockiddup <- duplicated(fsnoid$knockid)
+table(fsnoid$knockiddup) #185,552 unique knocks...may be an underestimate if canvasser logged multiple attempts with same event_time
+## individuals canvassed/unique attempts or knocks = 3% canvass rate
+
+#get # of unique individuals/targets attempted and canvassed (with VANID)
+fs <- read.csv("State Leg with VAN ID.csv")
+names(fs)
+fs$dup <- duplicated(fs$vanid)
+table(fs$dup) #445,889 unique individuals attempted by statewide leg component
+table(fs$dup,fs$target)
+prop.table(table(fs$dup,fs$target),1) #of these 445,889, 202,813 (45.5%) were targets 
+
+canvassed <- fs[ which(fs$canvass_status=="Canvassed"), ]
+canvassed$dup <- duplicated(canvassed$vanid)
+table(canvassed$dup) #the statewide leg component canvassed 71,970 unique individuals
+table(canvassed$dup,canvassed$target)
+prop.table(table(canvassed$dup,canvassed$target),1) #of these 71,970, 49,185 (68%) were targets
+
+#get # of knocks
+fs$attempt_iddup <- duplicated(fs$attempt_id)
+table(fs$attempt_iddup) #348,574 unique attempts/knocks
+## individuals canvassed/total knocks = 20.6% canvass rate
+## targets canvassed/total knocks = 14.1% target canvass rate
+
+#combine with and without id to get total knocks
+myvars <- c("vanid","attempt_id","pass","event_time","target","canvass_status")
+fsnoidsub <- fsnoid[myvars]
+fssub <- fs[myvars]
+fstotal <- rbind(fsnoidsub,fssub)
+
+fstotal$attempt_iddup <- duplicated(fstotal$attempt_id)
+table(fstotal$attempt_iddup) #727,932 unique attempt ids/knocks...so canvassers made 356901-348574 8,327 attempts in which there were no voters w/ vanids?
+
+#get pass dates
+fstotal$month <- substr(fstotal$event_time,6,7)
+fstotal$day <- substr(fstotal$event_time,9,10)
+table(fstotal$day,fstotal$month)
+fsp1 <- fstotal[ which(fstotal$pass=="P1"), ]
+table(fsp1$day,fsp1$month)
+fsg1 <- fstotal[ which(fstotal$pass=="G1"), ]
+table(fsg1$day,fsg1$month)
+
+
+
+
+
+
+#LATINO CANVASS
+
+#get # of unique individuals/targets attempted and canvassed
+latino <- read.table("CLR Contact History.txt", sep="\t", header=TRUE, quote="", fill=TRUE)
+names(latino)
+
+latino$dup <- duplicated(latino$VANID)
+table(latino$dup)
+table(latino$dup,latino$Target)
+prop.table(table(latino$dup,latino$Target),1) #latino program attempted to canvass a total of 103,371 individuals (83,671 or 81% were the program's targets)
+
+latino$unique <- ifelse(latino$dup==FALSE,1,0)
+unique <- latino[ which(latino$unique==1), ]
+dim(unique)
+write.table(unique,"Latino Field VANIDs.txt", sep="\t")
+
+data <- read.table("CLR Individuals Attempted.txt", sep="\t", header=TRUE, quote="", fill=TRUE)
+names(data)
+dim(data)
+
+latino <- merge(latino,data,by="VANID")
+
+latino$target <- ifelse(latino$X2016_Cohorts_2016_09_14=="GOTV" | latino$X2016_Cohorts_2016_08_03=="HiP" |
+                          latino$X2016_Cohorts_2016_08_03=="MedHiP" |
+                          latino$X2016_Cohorts_2016_08_03=="MedLoP" |
+                          latino$X2016_Cohorts_2016_08_03=="LoP",1,0)
+table(latino$dup,latino$target)
+prop.table(table(latino$dup,latino$target),1) #of the people the latino program attempted to canvass, 73,658 (71%) were targets
+
+canvassed <- latino[ which(latino$ResultShortName=="Canvassed"), ]
+canvassed$dup <- duplicated(canvassed$VANID)
+table(canvassed$dup) #the latino field program canvassed 33,716 unique individuals
+table(canvassed$dup,canvassed$Target)
+prop.table(table(canvassed$dup,canvassed$Target),1) #of these 33,716, 30,333 (90%) were the program's targets
+table(canvassed$dup,canvassed$target)
+prop.table(table(canvassed$dup,canvassed$target),1) #of these 33,716, 24,567 (73%) were targets
+
+#get # of knocks
+latino$knockid <- paste0(latino$DateCanvassed,latino$VHHID)
+latino$knockiddup <- duplicated(latino$knockid)
+table(latino$knockiddup) #202,264 knocks (based on attempt date & VHHID)
+table(latino$knockiddup,latino$Pass)
+prop.table(table(latino$knockiddup,latino$pass),1)
+## individuals canvassed/total knocks = 17% canvass rate
+## targets canvassed/total knocks = 15% target canvass rate
+
+latinotargets <- latino[ which(latino$X2016_Cohorts_2016_09_14=="GOTV" | latino$X2016_Cohorts_2016_08_03=="HiP" |
+                               latino$X2016_Cohorts_2016_08_03=="MedHiP" |
+                               latino$X2016_Cohorts_2016_08_03=="MedLoP" |
+                               latino$X2016_Cohorts_2016_08_03=="LoP"), ]
+
+table(latinotargets$unique)
+canvassed <- latinotargets[ which(latinotargets$ResultShortName=="Canvassed"), ]
+canvassed$dup <- duplicated(canvassed$VANID)
+table(canvassed$dup)
+
+
+
+
+
+#NEW ERA FIELD
+ne <- read.table("New Era c4 Contact History.txt", sep="\t", header=TRUE, quote="", fill=TRUE)
+names(ne)
+
+ne$unique <- ifelse(ne$dup==FALSE,1,0)
+unique <- ne[ which(ne$unique==1), ]
+dim(unique)
+myvars <- c("VANID")
+unique <- unique[myvars]
+write.table(unique,"New Era c4 Field VANIDs.txt", sep="\t", row.names=F)
+
+data <- read.table("New Era c4 Individuals Attempted.txt", sep="\t", header=TRUE, quote="", fill=TRUE)
+names(data)
+dim(data)
+
+ne <- merge(ne,data,by="VANID")
+
+ne$dup <- duplicated(ne$VANID)
+table(ne$dup) #new era program attempted to canvass a total of 21,674 individuals
+ne$target <- ifelse(ne$X2016_Cohorts_2016_09_14=="GOTV" | ne$X2016_Cohorts_2016_08_03=="HiP" |
+                      ne$X2016_Cohorts_2016_08_03=="MedHiP" |
+                      ne$X2016_Cohorts_2016_08_03=="MedLoP" |
+                      ne$X2016_Cohorts_2016_08_03=="LoP",1,0)
+table(ne$dup,ne$target)
+prop.table(table(ne$dup,ne$target),1) #of the people new era program attempted to canvass, 10,762 (50%) were targets
+
+canvassed <- ne[ which(ne$ResultShortName=="Canvassed"), ]
+canvassed$dup <- duplicated(canvassed$VANID)
+table(canvassed$dup) #the new era field program canvassed 4,600 unique individuals
+table(canvassed$dup,canvassed$target)
+prop.table(table(canvassed$dup,canvassed$target),1) #of these, 2,097 (46%) were targets
+
+#get # of knocks
+ne$knockid <- paste0(ne$DateCanvassed,ne$VHHID)
+ne$knockiddup <- duplicated(ne$knockid)
+table(ne$knockiddup) #22,864 knocks (based on attempt date & VHHID)
+
+
+
+
+
+
+
+#COORDINATED CAMPAIGN
+setwd("C:/Users/GSSA1/Dropbox (IRN)/GSSA/2016 Field/2016 Field & GOTV Analyses/")
+cc <- read.csv("MyVoters Canvass Summary Part 1v3.csv")
+cc2 <- read.csv("MyVoters Canvass Summary Part 2v3.csv")
+cc <- rbind(cc,cc2) #1,194,625 total attempts
+names(cc)
+cc$dup <- duplicated(cc$SOSID)
+table(cc$dup) #860,861 unique people attempted
+
+cc$unique <- ifelse(cc$dup==FALSE,1,0)
+unique <- cc[ which(cc$unique==1), ]
+dim(unique)
+myvars <- c("SOSID")
+unique <- unique[myvars]
+write.table(unique,"Coordinated Campaign Field SOSIDs.txt", sep="\t", row.names=F)
+
+data <- read.table("Coordinated Campaign Individuals Attempted.txt", sep="\t", header=TRUE, quote="", fill=TRUE)
+names(data)
+dim(data) #857,892 people matched in VAN using SOSID as of 1/5/17 (~3k people didn't match likely due to post-election voter file update)
+
+cc$StateFileID <- cc$SOSID
+cc <- merge(cc,data,by="StateFileID",all.x=T)
+
+cc$dup <- duplicated(cc$VANID)
+table(cc$dup) #coordinated campaign attempted to canvass a total of 857,793 unique individuals that could be matched back to VAN (~3k didn't match)
+cc$target <- ifelse(cc$X2016_Cohorts_2016_09_14=="GOTV" | cc$X2016_Cohorts_2016_08_03=="HiP" |
+                      cc$X2016_Cohorts_2016_08_03=="MedHiP" |
+                      cc$X2016_Cohorts_2016_08_03=="MedLoP" |
+                      cc$X2016_Cohorts_2016_08_03=="LoP",1,0)
+table(cc$dup,cc$target) #coordinated capaign attempted to canvass 397,646 of our targets (GOTV and Persuasion cohorts)
+prop.table(table(cc$dup,cc$target),1)
+
+cccanvassed <- cc[ which(cc$Result=="Canvassed"), ]
+cccanvassed$dup <- duplicated(cccanvassed$VANID)
+table(cccanvassed$dup) #coordinated campaign canvassed 207,567 unique people
+table(cccanvassed$dup,cccanvassed$target) #of these, 85,190 (41%) were our targets
+prop.table(table(cccanvassed$dup,cccanvassed$target),1)
+table(cccanvassed$dup,cccanvassed$X2016_Cohorts_2016_09_14)
+
+
+
+
+
+
+
+
+
+#soft-side/hard-side overlap
+senate <- read.table("DSCF IDs.txt", sep="\t", header=TRUE, quote="", fill=TRUE)
+names(senate)
+
+lfw1 <- read.table("LFP Week 1 Contact History.txt", sep="\t", header=TRUE, quote="", fill=TRUE)
+lfw1$vanid <- lfw1$VANID
+lfw1$result <- lfw1$ResultShortName
+
+lf <- read.table("2016-11-17 LFP Data.txt", sep="\t", header=TRUE, quote="", fill=TRUE)
+lf$vanid <- as.numeric(gsub("U", "", lf$vanid))
+lf$result <- lf$canvass_result
+
+fs <- read.csv("State Leg with VAN ID.csv")
+fs$result <- fs$canvass_status
+
+sf <- read.csv("State Field with VAN ID.csv")
+sf$result <- sf$canvass_status
+
+myvars <- c("vanid","result")
+lfw1 <- lfw1[myvars]
+lf <- lf[myvars]
+fs <- fs[myvars]
+sf <- sf[myvars]
+ss <- rbind(lfw1,lf,fs,sf)
+ss$side <- "soft"
+rm(lfw1)
+rm(lf)
+rm(fs)
+rm(sf)
+
+leg <- read.table("ALL Leg Field Individuals Attempted.txt", sep="\t", header=TRUE, quote="", fill=TRUE)
+sw <- read.table("Statewide Field Individuals Attempted.txt", sep="\t", header=TRUE, quote="", fill=TRUE)
+vandata <- rbind(leg,sw)
+rm(leg)
+rm(sw)
+vandata$dup <- duplicated(vandata$VANID)
+vandata$unique <- ifelse(vandata$dup==FALSE,1,0)
+vandata <- vandata[ which(vandata$unique==1), ]
+vandata$vanid <- vandata$VANID
+ss <- merge(ss,vandata,by="vanid",all.x=T)
+rm(vandata)
+
+cc <- read.csv("MyVoters Canvass Summary Part 1v3.csv")
+cc2 <- read.csv("MyVoters Canvass Summary Part 2v3.csv")
+cc <- rbind(cc,cc2)
+rm(cc2)
+data <- read.table("Coordinated Campaign Individuals Attempted.txt", sep="\t", header=TRUE, quote="", fill=TRUE)
+cc$StateFileID <- cc$SOSID
+cc <- merge(cc,data,by="StateFileID",all.x=T)
+rm(data)
+cc$vanid <- cc$VANID
+cc$result <- cc$Result
+cc$side <- "hard"
+
+myvars <- c("vanid","result","side","General16","X2016.Cat.VProp2","X2016.Cat.VCI","X2016_Cohorts_2016_09_14","Sex","Age","RaceName","Party","MaritalStatus","NAM","DateReg","CD","SD","HD","CountyName","PrecinctName")
+ss <- ss[myvars]
+cc <- cc[myvars]
+
+#determine overlap among individuals attempted by both sides
+ss$dup <- duplicated(ss$vanid)
+table(ss$dup) #soft side attempted to canvass 1,400,958 unique individuals
+ss$unique <- ifelse(ss$dup==FALSE,1,0)
+ssunique <- ss[ which(ss$unique==1), ]
+cc$dup <- duplicated(cc$vanid)
+table(cc$dup) #hard side attempted to canvass 857,793 unique individuals
+cc$unique <- ifelse(cc$dup==FALSE,1,0)
+ccunique <- cc[ which(cc$unique==1), ]
+total <- rbind(ssunique,ccunique)
+total$dup <- duplicated(total$vanid)
+table(total$dup) #only 350,191 were attempted by both soft and hard sides
+table(total$dup,total$X2016_Cohorts_2016_09_14) #most of the overlap was in Base and GOTV
+
+#determine overlap among individuals canvassed by both sides
+sscanvassed <- ss[ which(ss$result=="Canvassed"), ]
+cccanvassed <- cc[ which(cc$result=="Canvassed"), ]
+sscanvassed$dup <- duplicated(sscanvassed$vanid)
+table(sscanvassed$dup) #soft side canvassed 211,094 unique individuals
+sscanvassed$unique <- ifelse(sscanvassed$dup==FALSE,1,0)
+ssunique <- sscanvassed[ which(sscanvassed$unique==1), ]
+cccanvassed$dup <- duplicated(cccanvassed$vanid)
+table(cccanvassed$dup) #hard side canvassed 207,567 unique individuals
+cccanvassed$unique <- ifelse(cccanvassed$dup==FALSE,1,0)
+ccunique <- cccanvassed[ which(cccanvassed$unique==1), ]
+total <- rbind(ssunique,ccunique)
+total$dup <- duplicated(total$vanid)
+table(total$dup) #only 22,623 were canvassed by both soft and hard sides
+table(total$dup,total$X2016_Cohorts_2016_09_14) #most of the overlap was in Base and GOTV
+table(total$side,total$dup,total$X2016_Cohorts_2016_09_14)
+
+total$county14 <- ifelse(total$CountyName=="Adams" |
+                           total$CountyName=="Arapahoe" |
+                           total$CountyName=="Boulder" |
+                           total$CountyName=="Broomfield" |
+                           total$CountyName=="Denver" |
+                           total$CountyName=="Douglas" |
+                           total$CountyName=="El Paso" |
+                           total$CountyName=="Garfield" |
+                           total$CountyName=="Jefferson" |
+                           total$CountyName=="La Plata" |
+                           total$CountyName=="Larimer" |
+                           total$CountyName=="Mesa" |
+                           total$CountyName=="Pueblo" |
+                           total$CountyName=="Weld",1,0)
+table(total$side,total$dup,total$county14)
+table(total$dup,total$county14)
+total14 <- total[ which(total$county14==1), ]
+table(total14$side,total14$dup,total14$CountyName)
+
+table(total$side,total$dup,total$CD)
+table(total$side,total$dup,total$SD)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#leg field gotv effectiveness analyses
+setwd("C:/Users/GSSA1/Dropbox (IRN)/GSSA/2016 Field/2016 Field & GOTV Analyses/")
+
+lfw1 <- read.table("LFP Week 1 Contact History.txt", sep="\t", header=TRUE, quote="", fill=TRUE)
+names(lfw1)
+lfw1$vanid <- lfw1$VANID
+lfw1$timestamp <- lfw1$DateCanvassed
+lfw1$pass <- "Pass 1"
+lfw1$result <- lfw1$ResultShortName
+lfw1$vendorfile <- "GVO"
+
+lf <- read.table("2016-11-17 LFP Data.txt", sep="\t", header=TRUE, quote="", fill=TRUE)
+names(lf)
+lf$vanid <- as.numeric(gsub("U", "", lf$vanid))
+lf$timestamp <- lf$datetime_canvassed
+lf$result <- lf$canvass_result
+lf$vendorfile <- "GVO"
+
+fs <- read.csv("State Leg with VAN ID.csv")
+names(fs)
+fs$timestamp <- fs$event_time
+fs$result <- fs$canvass_status
+fs$vendorfile <- "FS"
+
+myvars <- c("vanid","timestamp","pass","result","vendorfile")
+lfw1 <- lfw1[myvars]
+lf <- lf[myvars]
+fs <- fs[myvars]
+leg <- rbind(lfw1,lf,fs)
+rm(lfw1)
+rm(lf)
+rm(fs)
+
+leg$tempid <- paste0(leg$vanid,leg$timestamp)
+leg$unique <- ifelse(duplicated(leg$tempid)==FALSE,1,0)
+table(leg$unique)
+leg <- leg[ which(leg$unique==1), ]
+
+vandata <- read.table("ALL Leg Field Individuals Attempted.txt", sep="\t", header=TRUE, quote="", fill=TRUE)
+vandata$dup <- duplicated(vandata$VANID)
+vandata$unique <- ifelse(vandata$dup==FALSE,1,0)
+vandata <- vandata[ which(vandata$unique==1), ]
+vandata$vanid <- vandata$VANID
+leg <- merge(leg,vandata,by="vanid",all.x=T)
+myvars <- c("vanid","timestamp","tempid","pass","result","vendorfile","VHHID","General16","X2016.Cat.VProp2","X2016.Cat.VCI","X2016_Cohorts_2016_08_03","X2016_Cohorts_2016_09_14","Sex","Age","RaceName","Party","MaritalStatus","NAM","DateReg","CD","SD","HD","CountyName","PrecinctName")
+leg <- leg[myvars]
+rm(vandata)
+
+leg$monthday <- substr(leg$timestamp,6,10)
+
+leg$unique <- ifelse(duplicated(leg$vanid)==FALSE,1,0)
+table(leg$unique)
+leg$GOTVtarget <- ifelse(leg$X2016_Cohorts_2016_09_14=="GOTV",1,0)
+leg$Ptarget <- ifelse(leg$X2016_Cohorts_2016_08_03=="HiP" | leg$X2016_Cohorts_2016_08_03=="MedHiP" | leg$X2016_Cohorts_2016_08_03=="MedLoP",1,0)
+
+
+
+##############################
+sd19 <- leg[ which(leg$SD==27 & leg$X2016_Cohorts_2016_09_14=="LPNT"), ]
+sd19precincts <- sd19[ which(duplicated(sd19$PrecinctName)==FALSE), ]
+myvars <- c("PrecinctName")
+sd19precincts <- sd19precincts[myvars]
+sd19canvassed <- sd19[ which(sd19$result=="Canvassed"), ]
+sd19canvassed <- sd19canvassed[ which(duplicated(sd19canvassed$vanid)==FALSE), ]
+
+mytable <- data.frame(table(sd19canvassed$PrecinctName))
+mytable$PrecinctName <- mytable$Var1
+mytable$canvfreq <- mytable$Freq
+myvars <- c("PrecinctName","canvfreq")
+mytable <- mytable[myvars]
+sd19precincts <- merge(sd19precincts,mytable,by="PrecinctName",all.x=T,all.y=F)
+
+sd19 <- read.table("2016 Precinct-Level Results - SD19.txt",sep="\t",header=TRUE)
+sd19$sd <- 19
+sd25 <- read.table("2016 Precinct-Level Results - SD25.txt",sep="\t",header=TRUE)
+sd25$sd <- 25
+sd26 <- read.table("2016 Precinct-Level Results - SD26.txt",sep="\t",header=TRUE)
+sd26$sd <- 26
+sd27 <- read.table("2016 Precinct-Level Results - SD27.txt",sep="\t",header=TRUE)
+sd27$sd <- 27
+data <- rbind(sd19,sd25,sd26,sd27)
+
+data$diff <- data$CURegent2way-data$COSen2way
+fit <- glm(diff~vci+notwhite+Turnout+COSenRollOff+age+female,data=data)
+summary(fit)
+
+tapply(data$CanvassedFreq,as.factor(data$sd),FUN=sum)
+
+fit <- glm(COSen2way~vci+vp+female+notwhite+age+Canvassed,data=data)
+summary(fit)
+reg500 <- data[ which(data$Registrants>=500), ]
+fit <- glm(COSen2way~vci+vp+female+notwhite+age+Canvassed,data=reg500)
+summary(fit)
+
+fit <- glm(Turnout~vci+vp+female+notwhite+age+Canvassed,data=data)
+summary(fit)
+fit <- glm(Turnout~vci+vp+female+notwhite+age+Canvassed,data=reg500)
+summary(fit)
+
+fit <- glm(COSenRollOff~vci+vp+female+notwhite+age+Canvassed,data=data)
+summary(fit)
+fit <- glm(COSenRollOff~vci+vp+female+notwhite+age+Canvassed,data=reg500)
+summary(fit)
+
+
+
+fit <- glm(COSen2way~vci+vp+female+notwhite+age+BaseCanvassPerc+GOTVCanvassPerc,data=data)
+summary(fit)
+fit <- glm(COSen2way~vci+vp+female+notwhite+age+PersuasionCanvassPerc,data=data)
+summary(fit)
+fit <- glm(GOTVTurnout~vci+vp+female+notwhite+age+GOTVCanvassPerc,data=data)
+summary(fit)
+gotv75 <- data[ which(data$GOTV>=75), ]
+fit <- glm(GOTVTurnout~vci+vp+female+notwhite+age+GOTVCanvassPerc,data=gotv75)
+summary(fit)
+
+fit <- glm(COSenRollOff~vci+vp+female+notwhite+age+BaseCanvassPerc+GOTVCanvassPerc+PersuasionCanvassPerc+ConsBaseCanvassPerc+ConsGOTVCanvassPerc,data=data)
+summary(fit)
+fit <- glm(COSenRollOff~vci+vp+female+notwhite+age+PersuasionCanvassPerc,data=data)
+summary(fit)
+
+
+persprecincts <- data[ which(data$vci<=.55 & data$vci>=.45), ]
+fit <- glm(COSenRollOff~vci+vp+female+notwhite+age+Canvassed,data=persprecincts)
+summary(fit)
+progprecincts <- data[ which(data$vci>.55), ]
+fit <- glm(COSenRollOff~vci+vp+female+notwhite+age+Canvassed,data=progprecincts)
+summary(fit)
+consprecincts <- data[ which(data$vci<.45), ]
+fit <- glm(COSenRollOff~vci+vp+female+notwhite+age+Canvassed,data=consprecincts)
+summary(fit)
+
+fit1 <- glm(COSenRollOff~vci+vp+female+notwhite+age,data=data)
+fit2 <- glm(COSenRollOff~vci+vp+female+notwhite+age+BaseCanvassPerc+GOTVCanvassPerc+PersuasionCanvassPerc,data=data)
+anova(fit1,fit2,test="Chisq")
+
+########################################
+
+
+
+#get number of attempts for each person
+attempts <- data.frame(table(leg$vanid))
+attempts$vanid <- attempts$Var1
+attempts$attempts <- attempts$Freq
+myvars <- c("vanid","attempts")
+attempts <- attempts[myvars]
+
+leg <- merge(leg,attempts,by="vanid")
+
+#get number of times canvassed for each person
+canvassed <- leg[ which(leg$result=="Canvassed"), ]
+canvassed <- data.frame(table(canvassed$vanid))
+
+canvassed$vanid <- canvassed$Var1
+canvassed$canvfreq <- canvassed$Freq
+names(canvassed)
+myvars <- c("vanid","canvfreq")
+canvassed <- canvassed[myvars]
+
+leg <- merge(leg, canvassed, by="vanid", all.x=TRUE)
+leg$canvfreq[is.na(leg$canvfreq)] <- 0
+
+#get number of come backs for each person
+comeback <- leg[ which(leg$result=="Come Back"), ]
+comeback <- data.frame(table(comeback$vanid))
+
+comeback$vanid <- comeback$Var1
+comeback$cbfreq <- comeback$Freq
+names(comeback)
+myvars <- c("vanid","cbfreq")
+comeback <- comeback[myvars]
+
+leg <- merge(leg, comeback, by="vanid", all.x=TRUE)
+leg$cbfreq[is.na(leg$cbfreq)] <- 0
+
+rm(attempts)
+rm(canvassed)
+rm(comeback)
+
+leg$vp <- leg$X2016.Cat.VProp2
+leg$vpbin[leg$vp<5] <- 1
+leg$vpbin[leg$vp>=5 & leg$vp<10] <- 2
+leg$vpbin[leg$vp>=10 & leg$vp<15] <- 3
+leg$vpbin[leg$vp>=15 & leg$vp<20] <- 4
+leg$vpbin[leg$vp>=20 & leg$vp<25] <- 5
+leg$vpbin[leg$vp>=25 & leg$vp<30] <- 6
+leg$vpbin[leg$vp>=30 & leg$vp<35] <- 7
+leg$vpbin[leg$vp>=35 & leg$vp<40] <- 8
+leg$vpbin[leg$vp>=40 & leg$vp<45] <- 9
+leg$vpbin[leg$vp>=45 & leg$vp<50] <- 10
+leg$vpbin[leg$vp>=50 & leg$vp<55] <- 11
+leg$vpbin[leg$vp>=55 & leg$vp<60] <- 12
+leg$vpbin[leg$vp>=60 & leg$vp<65] <- 13
+leg$vpbin[leg$vp>=65 & leg$vp<70] <- 14
+leg$vpbin[leg$vp>=70 & leg$vp<75] <- 15
+leg$vpbin[leg$vp>=75 & leg$vp<80] <- 16
+leg$vpbin[leg$vp>=80 & leg$vp<85] <- 17
+leg$vpbin[leg$vp>=85 & leg$vp<90] <- 18
+leg$vpbin[leg$vp>=90 & leg$vp<95] <- 19
+leg$vpbin[leg$vp>=95] <- 20
+
+leg$unique <- ifelse(duplicated(leg$vanid)==FALSE,1,0)
+leggotv <- leg[ which(leg$X2016_Cohorts_2016_09_14=="GOTV"), ]
+table(leggotv$vpbin,leggotv$unique,leggotv$result)
+table(leg$vpbin,leg$unique,leg$GOTVtarget)
+
+
+
+
+
+
+
+
+
+#statewide field gotv effectiveness analyses
+setwd("C:/Users/GSSA1/Dropbox (IRN)/GSSA/2016 Field/2016 Field & GOTV Analyses/")
+
+sf <- read.csv("State Field with VAN ID.csv")
+names(sf)
+sf$result <- sf$canvass_status
+sf$timestamp <- sf$event_time
+
+vandata <- read.table("Statewide Field Individuals Attempted.txt", sep="\t", header=TRUE, quote="", fill=TRUE)
+names(vandata)
+vandata$vanid <- vandata$VANID
+sf <- merge(sf,vandata,by="vanid",all.x=T)
+myvars <- c("vanid","timestamp","pass","result","VHHID","General16","X2016.Cat.VProp2","X2016.Cat.VCI","X2016_Cohorts_2016_08_03","X2016_Cohorts_2016_09_14","Sex","Age","RaceName","Party","MaritalStatus","NAM","DateReg","CD","SD","HD","CountyName","PrecinctName")
+sf <- sf[myvars]
+rm(vandata)
+
+sf$monthday <- substr(sf$timestamp,6,10)
+
+sf$unique <- ifelse(duplicated(sf$vanid)==FALSE,1,0)
+table(sf$unique)
+sf$GOTVtarget <- ifelse(sf$X2016_Cohorts_2016_09_14=="GOTV",1,0)
+sf$Ptarget <- ifelse(sf$X2016_Cohorts_2016_08_03=="HiP" | sf$X2016_Cohorts_2016_08_03=="MedHiP" | sf$X2016_Cohorts_2016_08_03=="MedLoP",1,0)
+
+#get number of attempts for each person
+attempts <- data.frame(table(sf$vanid))
+attempts$vanid <- attempts$Var1
+attempts$attempts <- attempts$Freq
+myvars <- c("vanid","attempts")
+attempts <- attempts[myvars]
+
+sf <- merge(sf,attempts,by="vanid")
+
+#get number of times canvassed for each person
+canvassed <- sf[ which(sf$result=="Canvassed"), ]
+canvassed <- data.frame(table(canvassed$vanid))
+
+canvassed$vanid <- canvassed$Var1
+canvassed$canvfreq <- canvassed$Freq
+names(canvassed)
+myvars <- c("vanid","canvfreq")
+canvassed <- canvassed[myvars]
+
+sf <- merge(sf, canvassed, by="vanid", all.x=TRUE)
+sf$canvfreq[is.na(sf$canvfreq)] <- 0
+
+#get number of come backs for each person
+comeback <- sf[ which(sf$result=="Come Back"), ]
+comeback <- data.frame(table(comeback$vanid))
+
+comeback$vanid <- comeback$Var1
+comeback$cbfreq <- comeback$Freq
+names(comeback)
+myvars <- c("vanid","cbfreq")
+comeback <- comeback[myvars]
+
+sf <- merge(sf, comeback, by="vanid", all.x=TRUE)
+sf$cbfreq[is.na(sf$cbfreq)] <- 0
+
+rm(attempts)
+rm(canvassed)
+rm(comeback)
+
+sf$vp <- sf$X2016.Cat.VProp2
+sf$vpbin[sf$vp<5] <- 1
+sf$vpbin[sf$vp>=5 & sf$vp<10] <- 2
+sf$vpbin[sf$vp>=10 & sf$vp<15] <- 3
+sf$vpbin[sf$vp>=15 & sf$vp<20] <- 4
+sf$vpbin[sf$vp>=20 & sf$vp<25] <- 5
+sf$vpbin[sf$vp>=25 & sf$vp<30] <- 6
+sf$vpbin[sf$vp>=30 & sf$vp<35] <- 7
+sf$vpbin[sf$vp>=35 & sf$vp<40] <- 8
+sf$vpbin[sf$vp>=40 & sf$vp<45] <- 9
+sf$vpbin[sf$vp>=45 & sf$vp<50] <- 10
+sf$vpbin[sf$vp>=50 & sf$vp<55] <- 11
+sf$vpbin[sf$vp>=55 & sf$vp<60] <- 12
+sf$vpbin[sf$vp>=60 & sf$vp<65] <- 13
+sf$vpbin[sf$vp>=65 & sf$vp<70] <- 14
+sf$vpbin[sf$vp>=70 & sf$vp<75] <- 15
+sf$vpbin[sf$vp>=75 & sf$vp<80] <- 16
+sf$vpbin[sf$vp>=80 & sf$vp<85] <- 17
+sf$vpbin[sf$vp>=85 & sf$vp<90] <- 18
+sf$vpbin[sf$vp>=90 & sf$vp<95] <- 19
+sf$vpbin[sf$vp>=95] <- 20
+
+sf$unique <- ifelse(duplicated(sf$vanid)==FALSE,1,0)
+sfgotv <- sf[ which(sf$pass!="P1"), ]
+table(sfgotv$vpbin,sfgotv$unique)
+
+
+
+
+
+
+#create and clean canvassed vs. comeback analysis dataframe
+data <- leg[ which(leg$cbfreq>0 | leg$canvfreq>0), ]
+data <- leg[ which((leg$cbfreq>0 | leg$canvfreq>0) & leg$X2016_Cohorts_2016_09_14=="GOTV"), ]
+data <- leg[ which((leg$cbfreq>0 | leg$canvfreq>0) & leg$SD==27), ]
+data <- leg[ which((leg$cbfreq>0 | leg$canvfreq>0) & leg$X2016_Cohorts_2016_09_14=="GOTV" & leg$SD==27), ]
+
+#data <- sf[ which(sf$cbfreq>0 | sf$canvfreq>0), ]
+#data <- data[ which(data$pass!="P1"), ]
+
+data$txgroup <- ifelse(data$canvfreq>0,1,0)
+data$unique <- ifelse(duplicated(data$vanid)==FALSE,1,0)
+data <- data[ which(data$unique==1), ]
+
+table(data$txgroup)
+table(data$General16)
+data$voted16 <- 0
+data$voted16[data$General16=="A"] <- 1
+data$voted16[data$General16=="M"] <- 1
+data$voted16[data$General16=="Y"] <- 1
+table(data$voted16)
+
+table(data$txgroup,data$voted16)
+prop.table(table(data$txgroup,data$voted16),1)
+chisq.test(table(data$txgroup,data$voted16))
+
+summary(data$X2016.Cat.VProp2)
+data$vp <- data$X2016.Cat.VProp2
+t.test(data$vp~data$txgroup)
+
+summary(data$X2016.Cat.VCI)
+data$vci <- data$X2016.Cat.VCI
+t.test(data$vci~data$txgroup)
+
+summary(data$Age)
+data$age <- data$Age
+t.test(data$age~data$txgroup)
+
+table(data$Sex)
+data$sex[data$Sex=="F"] <- 1
+data$sex[data$Sex=="M"] <- 0
+table(data$Sex,data$sex)
+table(data$txgroup,data$sex)
+prop.table(table(data$txgroup,data$sex),1)
+chisq.test(table(data$txgroup,data$sex))
+
+table(data$RaceName)
+data$notwhite <- ifelse(data$RaceName=="Caucasian",0,1)
+table(data$RaceName,data$notwhite)
+table(data$txgroup,data$notwhite)
+prop.table(table(data$txgroup,data$notwhite),1)
+chisq.test(table(data$txgroup,data$notwhite))
+
+table(data$MaritalStatus)
+data$married[data$MaritalStatus=="M"] <- 1
+data$married[data$MaritalStatus=="S"] <- 0
+table(data$MaritalStatus,data$married)
+table(data$txgroup,data$married)
+prop.table(table(data$txgroup,data$married),1)
+chisq.test(table(data$txgroup,data$married))
+
+#was turnout higher among those canvassed (vs. comeback) after accounting for other variables?
+fit1 <- glm(voted16~vp+vci+sex+age+notwhite,data=data,family=binomial)
+summary(fit1)
+
+fit2 <- glm(voted16~vp+vci+sex+age+notwhite+txgroup,data=data,family=binomial)
+summary(fit2)
+exp(coef(fit2))
+
+anova(fit1,fit2,test="Chisq")
+
+
+
+
+
+
+mydistrict <- leg[ which(leg$SD==27), ]
+attempteddf <- as.data.frame(table(mydistrict$vpbin,mydistrict$unique))
+txdf <- as.data.frame(table(data$vpbin,data$txgroup))
+vpaves <- as.data.frame(tapply(data$vp,data$vpbin,FUN=mean,na.rm=T))
+
+myfun <- function(x) {
+  myfit <- glm(voted16~vp+vci+sex+age+notwhite+txgroup,data=x,family=binomial)
+  return(exp(coef(myfit)))
+}
+myfun(data)
+
+data$vpbin <- as.factor(data$vpbin)
+by(data=data, data$vpbin, FUN=myfun)
+
+
+
+
+
+
+
+
+fs <- read.table("C:/Users/GSSA1/Dropbox (IRN)/Documents/2014 GOTV/FS_attempts_appended_yearcalcs.txt", header=TRUE, sep="\t")
+names(fs)
+
+setwd("C:/Users/GSSA1/Dropbox (IRN)/GSSA/2016 Field/2016 Field & GOTV Analyses/")
+
+vandata <- read.table("Statewide Field Individuals Attempted.txt", sep="\t", header=TRUE, quote="", fill=TRUE)
+names(vandata)
+
+myvars <- c("VANID")
+fs <- fs[myvars]
+vandata <- vandata[myvars]
+
+fs$year <- 2014
+vandata$year <- 2016
+data <- rbind(fs,vandata)
+data$dup <- duplicated(data$VANID)
+table(data$dup)
